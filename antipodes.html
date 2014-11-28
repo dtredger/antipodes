@@ -1,0 +1,119 @@
+<!-- dang! 
+latitude is constant 111.2 km
+longitude ranges from 1kt, 1.853 km, to 0 -->
+
+
+<html>
+	<head>
+		<title>find my antipode</title>
+		 <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+		 <style type="text/css">
+		 	#map {
+		 		height: 80%;
+		 		width: 80%;
+		 		margin-left: 10%;
+		 		margin-top: 10%;
+		 	}
+		 </style>
+	</head>
+	<body>
+		<div id="map"></div>
+<!-- 
+		<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
+		<script src="jquery.csv-0.71.js"></script>
+ -->
+		<script src="papaparse.min.js"></script>
+
+		<script src='https://api.tiles.mapbox.com/mapbox.js/v2.1.4/mapbox.js'></script>
+
+		<link href='https://api.tiles.mapbox.com/mapbox.js/v2.1.4/mapbox.css' rel='stylesheet' />
+<!-- 
+		<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+ -->
+		<script type="text/javascript">
+			function loadAntipode (location) {
+				CSV_URL = "http://antipodes.me.s3-website-us-east-1.amazonaws.com/citylatlon.csv";
+
+				lat = location.coords.latitude;
+				lon = location.coords.longitude;
+
+				antiLat = lat * -1;
+				lon < 0? val='neg' : val = 'pos';
+
+				antiLon = 180 - Math.abs(lon);
+				if (val == 'pos') {
+				 	antiLon = antiLon *-1
+				};
+
+				antiLat = lat * -1;
+				lon < 0? val='neg' : val = 'pos';
+
+				antiLon = 180 - Math.abs(lon);
+				if (val == 'pos') {
+				 	antiLon = antiLon *-1
+				};
+
+				L.mapbox.accessToken = 'pk.eyJ1IjoiZHRyZWRnZXIiLCJhIjoiWmtHX05jMCJ9.vI3A2tRtf6FwjZzM0clByw';
+				var map = L.mapbox.map('map', 'examples.map-i86nkdio').setView([antiLat, antiLon], 9);
+
+
+				closestCity = {
+					"name":"Utopia", 
+					"distance":100000000
+				};
+
+				function calculateDiff (antiPoint, csvPoint) {
+					if ((antiPoint < 0 && csvPoint < 0) || (antiPoint > 0 && csvPoint > 0)) {
+						return Math.abs(antiPoint - csvPoint);
+					} else {
+						return (Math.abs(antiPoint) + Math.abs(csvPoint));
+					};
+				};
+
+				function calculateDistance (csvObj) {
+					var csvLat = csvObj.data[0].lat;
+					var csvLon = csvObj.data[0].lon;
+
+					var latDiff = calculateDiff(antiLat, csvLat);
+					var lonDiff = calculateDiff(antiLon, csvLon);
+
+					var distance = Math.sqrt((latDiff*latDiff) + (lonDiff*lonDiff));
+					if (distance < closestCity.distance) {
+						closestCity.name = csvObj.data[0].city;
+						closestCity.distance = distance;
+					};
+				};
+
+
+				Papa.parse(CSV_URL, {
+					header: true,
+					dynamicTyping: true,
+					// preview: 100,
+					worker: true,
+					comments: false,
+					download: true,
+					// chunk: undefined,
+					fastMode: false,
+					step: function(row) {
+						calculateDistance(row);
+					},
+					complete: function() {
+						alert('the closest city to your antipode is ' + closestCity.name);
+					},
+					error: function(response) {
+						for (var i = response.errors.length - 1; i >= 0; i--) {
+							console.log(response.errors[i])
+						};
+						alert("B'oh...something went wrong...");
+					}
+				});
+
+
+			}
+
+			navigator.geolocation.getCurrentPosition(function(data) {
+				loadAntipode(data);
+			}, null, {});
+		</script>
+	</body>
+</html>
